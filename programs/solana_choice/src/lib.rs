@@ -91,6 +91,29 @@ pub struct InitializeChoice<'info> {
     pub system_program: Program<'info, System>,
 }
 
+
+#[derive(Accounts)]
+#[instruction(poll_id: u64, choice_name: String)]
+pub struct Vote <'info> {
+    pub signer: Signer<'info>,
+
+    #[account(
+        seeds = [b"poll", poll_id.to_le_bytes().as_ref(), signer.key().as_ref()],
+        bump
+    )]
+    pub poll_account: Account<'info, PollAccount>,
+
+    #[account(
+        mut,
+        seeds = [b"choice", poll_id.to_le_bytes().as_ref(), choice_name.as_ref(), signer.key().as_ref()],
+        bump
+    )]
+    pub choice_account: Account<'info, ChoiceAccount>,
+
+
+}
+
+
 #[account]
 #[derive(InitSpace)]
 pub struct PollAccount {
