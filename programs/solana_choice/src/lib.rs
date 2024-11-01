@@ -6,8 +6,7 @@ declare_id!("CPttFgMJ1nPU8KDUbBsLWmSQWB1f74R3i8Nt8k59Dgw9");
 pub mod solana_choice {
     use super::*;
 
-    pub fn initialize_poll
-    (
+    pub fn initialize_poll(
         ctx: Context<InitializePoll>,
         poll_id: u64,
         description: String,
@@ -21,8 +20,27 @@ pub mod solana_choice {
             description,
             start_date,
             end_date,
-            total_number_of_choices: 0
+            total_number_of_choices: 0,
         });
+        Ok(())
+    }
+
+    pub fn initialize_choice(
+        ctx: Context<InitializeChoice>,
+        poll_id: u64,
+        choice_name: String,
+    ) -> Result<()> {
+        msg!(
+            "Initializing the choice {} for poll_id {}",
+            choice_name,
+            poll_id
+        );
+
+        ctx.accounts.choice_account.set_inner(ChoiceAccount {
+            choice_account,
+            choice_votes: 0,
+        });
+
         Ok(())
     }
 }
