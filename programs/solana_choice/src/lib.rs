@@ -37,7 +37,7 @@ pub struct InitializePoll<'info> {
         init_if_needed,
         payer = signer,
         space = 8 + PollAccount::INIT_SPACE,
-        seeds = [poll_id.to_le_bytes().as_ref()],
+        seeds = [b"poll", poll_id.to_le_bytes().as_ref(), signer.key().as_ref()],
         bump
     )]
     pub poll_account: Account<'info, PollAccount>,
