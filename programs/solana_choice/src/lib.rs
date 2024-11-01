@@ -37,7 +37,7 @@ pub mod solana_choice {
         );
 
         let poll_account = &mut ctx.accounts.poll_account;
-        poll_account.total_number_of_choices += 1; 
+        poll_account.total_number_of_choices += 1;
 
         ctx.accounts.choice_account.set_inner(ChoiceAccount {
             choice_name,
@@ -47,17 +47,12 @@ pub mod solana_choice {
         Ok(())
     }
 
-    pub fn vote(
-        ctx: Context<Vote>,
-        _poll_id: u64,
-        _choice_name: String,
-    ) -> Result<()>{
+    pub fn vote(ctx: Context<Vote>, _poll_id: u64, _choice_name: String) -> Result<()> {
         msg!("Voting...");
         let choice_account = &mut ctx.accounts.choice_account;
         choice_account.choice_votes += 1;
 
         Ok(())
-
     }
 }
 
@@ -104,10 +99,9 @@ pub struct InitializeChoice<'info> {
     pub system_program: Program<'info, System>,
 }
 
-
 #[derive(Accounts)]
 #[instruction(poll_id: u64, choice_name: String)]
-pub struct Vote <'info> {
+pub struct Vote<'info> {
     pub signer: Signer<'info>,
 
     #[account(
@@ -122,10 +116,7 @@ pub struct Vote <'info> {
         bump
     )]
     pub choice_account: Account<'info, ChoiceAccount>,
-
-
 }
-
 
 #[account]
 #[derive(InitSpace)]
