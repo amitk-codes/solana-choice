@@ -37,7 +37,7 @@ pub mod solana_choice {
         );
 
         ctx.accounts.choice_account.set_inner(ChoiceAccount {
-            choice_account,
+            choice_name,
             choice_votes: 0,
         });
 
@@ -65,7 +65,7 @@ pub struct InitializePoll<'info> {
 
 #[derive(Accounts)]
 #[instruction(poll_id: u64, choice_name: String)]
-pub struct InitializeChoice {
+pub struct InitializeChoice<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
 
