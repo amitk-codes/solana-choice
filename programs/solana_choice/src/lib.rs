@@ -46,6 +46,19 @@ pub mod solana_choice {
 
         Ok(())
     }
+
+    pub fn vote(
+        ctx: Context<Vote>,
+        _poll_id: u64,
+        _choice_name: String,
+    ) -> Result<()>{
+        msg!("Voting...");
+        let choice_account = &mut ctx.accounts.choice_account;
+        choice_account.choice_votes += 1;
+
+        Ok(())
+
+    }
 }
 
 #[derive(Accounts)]
