@@ -45,6 +45,24 @@ pub struct InitializePoll<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+#[instruction(poll_id: u64, choice_name: String)]
+pub struct InitializeChoice {
+    #[account(mut)]
+    pub signer: Signer<'info>,
+
+    #[account(
+        init_if_needed,
+        payer = signer,
+        space = 8 + ChoiceAccount::INIT_SPACE,
+        seeds = [b"choice", poll_id.to_le_bytes().as_ref(), choice_name.as_ref()],
+        bump
+    )]
+    pub choice_account: Account<'info, ChoiceAccount>,
+
+    pub system_program: Program<'info, System>,
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct PollAccount {
@@ -56,4 +74,12 @@ pub struct PollAccount {
     start_date: u64,
     end_date: u64,
     total_number_of_choices: u64,
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct ChoiceAccount {
+    #[max_len(40)]
+    choice_name: String,
+    choice_votes: u64,
 }
