@@ -73,7 +73,7 @@ pub struct InitializeChoice<'info> {
         init_if_needed,
         payer = signer,
         space = 8 + ChoiceAccount::INIT_SPACE,
-        seeds = [b"choice", poll_id.to_le_bytes().as_ref(), choice_name.as_ref()],
+        seeds = [b"choice", poll_id.to_le_bytes().as_ref(), choice_name.as_ref(), signer.key().as_ref()],
         bump
     )]
     pub choice_account: Account<'info, ChoiceAccount>,
