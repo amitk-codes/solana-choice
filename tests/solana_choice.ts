@@ -118,8 +118,11 @@ describe("solana_choice", () => {
       .signers([demoKeypair])
       .rpc()
 
+    const updatedPollAccount = await program.account.pollAccount.fetch(pollAccountBump);
+
     const fetchChoiceAccount = await program.account.choiceAccount.fetch(choiceAccountBump);
     assert.equal(fetchChoiceAccount.choiceName, demoChoice);
     assert.equal(fetchChoiceAccount.choiceVotes.toNumber(), 0)
+    assert.equal(updatedPollAccount.totalNumberOfChoices.toNumber(), 1);
   })
 });
