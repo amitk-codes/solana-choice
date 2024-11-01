@@ -73,6 +73,7 @@ pub struct InitializeChoice<'info> {
     pub signer: Signer<'info>,
 
     #[account(
+        mut,
         seeds = [b"poll", poll_id.to_le_bytes().as_ref(), signer.key().as_ref()],
         bump
     )]
