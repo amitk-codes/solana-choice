@@ -36,6 +36,9 @@ pub mod solana_choice {
             poll_id
         );
 
+        let poll_account = &mut ctx.accounts.poll_account;
+        poll_account.total_number_of_choices += 1; 
+
         ctx.accounts.choice_account.set_inner(ChoiceAccount {
             choice_name,
             choice_votes: 0,
@@ -68,6 +71,12 @@ pub struct InitializePoll<'info> {
 pub struct InitializeChoice<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
+
+    #[account(
+        seeds = [b"poll", poll_id.to_le_bytes().as_ref(), signer.key().as_ref()],
+        bump
+    )]
+    pub poll_account: Account<'info, PollAccount>,
 
     #[account(
         init_if_needed,
