@@ -13,4 +13,32 @@ pub mod solana_choice {
 }
 
 #[derive(Accounts)]
-pub struct Initialize {}
+#[instruction(poll_id: u64)]
+pub struct InitializePoll<'info> {
+    #[account(mut)]
+    pub signer: Signer<'info>,
+
+    #[account(
+        init_if_needed,
+        payer = signer,
+        space = 8 + PollAccount::INIT_SPACE,
+        seeds = [poll_id.to_le_bytes().as_ref()],
+        bump
+    )]
+    pub poll_account: Account<'info, PollAccount>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct PollAccount {
+    poll_id: u64,
+
+    #[max_len(300)]
+    description: String,
+
+    start_date: u64,
+    end_date: u64,
+    total_number_of_choices: u64,
+}
