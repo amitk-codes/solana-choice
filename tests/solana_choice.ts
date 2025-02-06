@@ -3,7 +3,7 @@ import { Program } from "@coral-xyz/anchor";
 import { SolanaChoice } from "../target/types/solana_choice";
 import { assert } from "chai";
 
-describe("CHECK TEST", () => {
+describe("Solana Choice", () => {
   const web3 = anchor.web3;
   const program = anchor.workspace.SolanaChoice as Program<SolanaChoice>;
   const signer = web3.Keypair.generate();
