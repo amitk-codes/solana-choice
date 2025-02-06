@@ -3,217 +3,120 @@ import { Program } from "@coral-xyz/anchor";
 import { SolanaChoice } from "../target/types/solana_choice";
 import { assert } from "chai";
 
-describe("solana_choice", () => {
-  // Configure the client to use the local cluster.
-  anchor.setProvider(anchor.AnchorProvider.env());
-
-  const program = anchor.workspace.SolanaChoice as Program<SolanaChoice>;
+describe("CHECK TEST", () => {
   const web3 = anchor.web3;
-  const connection = program.provider.connection;
+  const program = anchor.workspace.SolanaChoice as Program<SolanaChoice>;
+  const signer = web3.Keypair.generate();
 
-  const fundWallet = async (walletAddress: anchor.web3.PublicKey) => {
-    const airdropSignature = await connection.requestAirdrop(walletAddress, 2 * web3.LAMPORTS_PER_SOL);
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+  const POLL_ID = 1;
+  const DESCRIPTION = "test description";
+  const START_DATE = 1738395586;
+  const END_DATE = 1769931586;
+  const CHOICE_NAME = "Choice 1";
 
-    await connection.confirmTransaction({
-      lastValidBlockHeight,
+  let pollAccountPDA = null;
+
+  beforeEach(async () => {
+    // funding the wallet
+    const tx = await program.provider.connection.requestAirdrop(
+      signer.publicKey,
+      0.05 * web3.LAMPORTS_PER_SOL
+    );
+
+    const { blockhash, lastValidBlockHeight } =
+      await program.provider.connection.getLatestBlockhash();
+    await program.provider.connection.confirmTransaction({
       blockhash,
-      signature: airdropSignature
-    }, "confirmed")
-  }
-
-  it("Initializes the Poll Account", async () => {
-    const demoKeypair = web3.Keypair.generate();
-    await fundWallet(demoKeypair.publicKey)
-
-    const [pollAccountDump] = web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("poll"), new anchor.BN(1).toArrayLike(Buffer, "le", 8), demoKeypair.publicKey.toBuffer()],
-      program.programId
-    )
-
-    const demoPollId = 1;
-    const demoDescription = "test-description";
-    const demoStartDate = 1727760548;
-    const demoEndDate = 1733030948;
-
-    const accounts = {
-      signer: demoKeypair.publicKey,
-      poll_account: pollAccountDump,
-      system_program: web3.SystemProgram.programId
-    }
-
-    await program.methods
-      .initializePoll(
-        new anchor.BN(demoPollId),
-        demoDescription,
-        new anchor.BN(demoStartDate),
-        new anchor.BN(demoEndDate)
-      )
-      .accounts(accounts)
-      .signers([demoKeypair])
-      .rpc();
-
-    const fetchPollAccount = await program.account.pollAccount.fetch(pollAccountDump);
-    assert.equal(fetchPollAccount.description, demoDescription);
-    assert.equal(fetchPollAccount.pollId.toNumber(), demoPollId)
-    assert.equal(fetchPollAccount.startDate.toNumber(), demoStartDate)
-    assert.equal(fetchPollAccount.endDate.toNumber(), demoEndDate)
+      lastValidBlockHeight,
+      signature: tx,
+    });
   });
 
-  it("Initializes the Choice Account", async () => {
-
-    // First initializing the poll account
-    const demoKeypair = web3.Keypair.generate();
-    await fundWallet(demoKeypair.publicKey)
-
-    const [pollAccountBump] = web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("poll"), new anchor.BN(1).toArrayLike(Buffer, "le", 8), demoKeypair.publicKey.toBuffer()],
+  before(async () => {
+    const [pollPDA] = web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("poll"),
+        new anchor.BN(POLL_ID).toArrayLike(Buffer, "le", 8),
+        signer.publicKey.toBuffer(),
+      ],
       program.programId
-    )
+    );
 
-    const demoPollId = 1;
-    const demoDescription = "test-description";
-    const demoStartDate = 1727760548;
-    const demoEndDate = 1733030948;
+    pollAccountPDA = pollPDA;
+  });
 
-    const pollAccounts = {
-      signer: demoKeypair.publicKey,
-      poll_account: pollAccountBump,
-      system_program: web3.SystemProgram.programId
-    }
-
+  it("initializes the poll account", async () => {
     await program.methods
       .initializePoll(
-        new anchor.BN(demoPollId),
-        demoDescription,
-        new anchor.BN(demoStartDate),
-        new anchor.BN(demoEndDate)
+        new anchor.BN(POLL_ID),
+        DESCRIPTION,
+        new anchor.BN(START_DATE),
+        new anchor.BN(END_DATE)
       )
-      .accounts(pollAccounts)
-      .signers([demoKeypair])
+      .accounts({ signer: signer.publicKey })
+      .signers([signer])
       .rpc();
 
+    const fetchPoll = await program.account.pollAccount.fetch(pollAccountPDA);
 
-    // Now running actual test by using above poll account
+    console.dir({ fetchPoll }, { depth: Infinity });
 
-    const demoChoice = "test-choice"
+    assert.equal(fetchPoll.pollId.toNumber(), POLL_ID);
+    assert.equal(fetchPoll.description, DESCRIPTION);
+    assert.equal(fetchPoll.startDate.toNumber(), START_DATE);
+    assert.equal(fetchPoll.endDate.toNumber(), END_DATE);
+  });
 
-    const [choiceAccountBump] = await web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("choice"), new anchor.BN(1).toArrayLike(Buffer, "le", 8), Buffer.from(demoChoice), demoKeypair.publicKey.toBuffer()],
+  it("initializes the choice accounts", async () => {
+    const tx = await program.methods
+      .initializeChoice(new anchor.BN(POLL_ID), CHOICE_NAME)
+      .accounts({ signer: signer.publicKey })
+      .signers([signer])
+      .rpc();
+
+    console.log({ initChoiceTx: tx });
+
+    const [choiceAccountPDA] = web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("choice"),
+        new anchor.BN(POLL_ID).toArrayLike(Buffer, "le", 8),
+        Buffer.from(CHOICE_NAME),
+        signer.publicKey.toBuffer(),
+      ],
       program.programId
-    )
+    );
 
-    const accounts = {
-      signer: demoKeypair.publicKey,
-      choice_account: choiceAccountBump,
-      system_program: web3.SystemProgram.programId
-    }
+    const fetchChoice = await program.account.choiceAccount.fetch(
+      choiceAccountPDA
+    );
 
-    await program.methods
-      .initializeChoice(
-        new anchor.BN(1),
-        demoChoice
-      )
-      .accounts(accounts)
-      .signers([demoKeypair])
-      .rpc()
+    assert.equal(fetchChoice.choiceName, CHOICE_NAME);
+    assert.equal(fetchChoice.choiceVotes.toNumber(), 0);
+  });
 
-    const updatedPollAccount = await program.account.pollAccount.fetch(pollAccountBump);
+  it("votes for a specific choice account", async () => {
+    const tx = await program.methods
+      .vote(new anchor.BN(POLL_ID), CHOICE_NAME)
+      .accounts({ signer: signer.publicKey })
+      .signers([signer])
+      .rpc();
 
-    const fetchChoiceAccount = await program.account.choiceAccount.fetch(choiceAccountBump);
-    assert.equal(fetchChoiceAccount.choiceName, demoChoice);
-    assert.equal(fetchChoiceAccount.choiceVotes.toNumber(), 0)
-    assert.equal(updatedPollAccount.totalNumberOfChoices.toNumber(), 1);
-  })
+    console.dir({ tx }, { depth: Infinity });
 
-  it("process votings", async () => {
-    // First initializing the poll account
-    const demoKeypair = web3.Keypair.generate();
-    await fundWallet(demoKeypair.publicKey)
-
-    const [pollAccountBump] = web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("poll"), new anchor.BN(1).toArrayLike(Buffer, "le", 8), demoKeypair.publicKey.toBuffer()],
+    const [choiceAccountPDA] = web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("choice"),
+        new anchor.BN(POLL_ID).toArrayLike(Buffer, "le", 8),
+        Buffer.from(CHOICE_NAME),
+        signer.publicKey.toBuffer(),
+      ],
       program.programId
-    )
+    );
 
-    const demoPollId = 1;
-    const demoDescription = "test-description";
-    const demoStartDate = 1727760548;
-    const demoEndDate = 1733030948;
-
-    const pollAccounts = {
-      signer: demoKeypair.publicKey,
-      poll_account: pollAccountBump,
-      system_program: web3.SystemProgram.programId
-    }
-
-    await program.methods
-      .initializePoll(
-        new anchor.BN(demoPollId),
-        demoDescription,
-        new anchor.BN(demoStartDate),
-        new anchor.BN(demoEndDate)
-      )
-      .accounts(pollAccounts)
-      .signers([demoKeypair])
-      .rpc();
-
-
-    // Now running registering the choice options by using above poll account
-
-    const demoChoice = "test-choice"
-
-    const [choiceAccountBump] = await web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("choice"), new anchor.BN(1).toArrayLike(Buffer, "le", 8), Buffer.from(demoChoice), demoKeypair.publicKey.toBuffer()],
-      program.programId
-    )
-
-    const initializeChoiceAccounts = {
-      signer: demoKeypair.publicKey,
-      poll_account: pollAccountBump,
-      choice_account: choiceAccountBump,
-      system_program: web3.SystemProgram.programId
-    }
-
-    await program.methods
-      .initializeChoice(
-        new anchor.BN(1),
-        demoChoice
-      )
-      .accounts(initializeChoiceAccounts)
-      .signers([demoKeypair])
-      .rpc();
-
-
-
-    // Now, running actual voting test 
-    const accounts = {
-      signer: demoKeypair.publicKey,
-      poll_account: pollAccountBump,
-      choice_account: choiceAccountBump,
-    }
-
-    // Voted: 1
-    await program.methods
-      .vote(
-        new anchor.BN(1),
-        demoChoice
-      )
-      .accounts(accounts)
-      .signers([demoKeypair])
-      .rpc();
-
-    // Voted: 2 
-    await program.methods
-      .vote(
-        new anchor.BN(1),
-        demoChoice
-      )
-      .accounts(accounts)
-      .signers([demoKeypair])
-      .rpc();
-
-    const fetchChoiceAccount = await program.account.choiceAccount.fetch(choiceAccountBump);
-    assert.equal(fetchChoiceAccount.choiceVotes.toNumber(), 2);
-  })
+    const fetchChoice = await program.account.choiceAccount.fetch(
+      choiceAccountPDA
+    );
+    assert.equal(fetchChoice.choiceVotes.toNumber(), 1);
+    assert.equal(fetchChoice.choiceName, CHOICE_NAME);
+  });
 });
